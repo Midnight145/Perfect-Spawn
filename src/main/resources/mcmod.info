@@ -1,14 +1,14 @@
 [
 {
-  "modid": "perfectspawn",
+  "modid": "PerfectSpawn",
   "name": "Perfect Spawn",
-  "description": "Allows you to move the vanilla spawn point to a different dimension.",
-  "version": "${version}",
-  "mcversion": "${mcversion}",
+  "description": "A mod that allows you to specify the exact player spawn.",
+  "version": "1.1.1",
+  "mcversion": "1.7.10",
   "url": "",
   "updateUrl": "",
   "authorList": ["lumien"],
-  "credits": "",
+  "credits": "lumien",
   "logoFile": "",
   "screenshots": [],
   "dependencies": []
