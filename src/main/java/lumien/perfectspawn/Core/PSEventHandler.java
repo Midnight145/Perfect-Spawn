@@ -7,12 +7,15 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.ChunkCoordinates;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
+import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldServerMulti;
 import net.minecraft.world.storage.DerivedWorldInfo;
 import net.minecraft.world.storage.WorldInfo;
@@ -23,8 +26,8 @@ import net.minecraftforge.event.world.WorldEvent;
 import org.apache.logging.log4j.Level;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.PlayerEvent.PlayerLoggedInEvent;
-import lumien.perfectspawn.Core.PerfectSpawnSettings.SettingEntry;
+import cpw.mods.fml.common.gameevent.PlayerEvent;
+import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import lumien.perfectspawn.Network.MessageHandler;
 import lumien.perfectspawn.Network.PerfectSpawnSettingsMessage;
 import lumien.perfectspawn.PerfectSpawn;
@@ -34,15 +37,17 @@ public class PSEventHandler {
 
     Field sleepTimer;
     Field sleeping;
+    public static final String NBT_KEY = "perfectspawnJoined";
 
     public PSEventHandler() {
         try {
-            sleepTimer = EntityPlayer.class.getDeclaredField(MCPNames.field("field_71076_b"));
-            sleepTimer.setAccessible(true);
+            this.sleepTimer = EntityPlayer.class.getDeclaredField(MCPNames.field("field_71076_b"));
+            this.sleepTimer.setAccessible(true);
 
-            sleeping = EntityPlayer.class.getDeclaredField(MCPNames.field("field_71083_bS"));
-            sleeping.setAccessible(true);
+            this.sleeping = EntityPlayer.class.getDeclaredField(MCPNames.field("field_71083_bS"));
+            this.sleeping.setAccessible(true);
         } catch (NoSuchFieldException nsf) {
+
             nsf.printStackTrace();
         }
     }
@@ -50,42 +55,48 @@ public class PSEventHandler {
     @SubscribeEvent
     public void worldLoaded(WorldEvent.Load event) {
         if (!event.world.isRemote) {
-            SettingEntry se = PerfectSpawn.settings.getValidSettingEntry();
+
+            PerfectSpawnSettings.SettingEntry se = PerfectSpawn.settings.getValidSettingEntry();
             if (se != null && se.spawnDimension == event.world.provider.dimensionId) {
-                this.setSpawnPoint(se.spawnDimension, se.spawnX, se.spawnY, se.spawnZ);
+
+                setSpawnPoint(se.spawnDimension, se.spawnX, se.spawnY, se.spawnZ);
             }
         }
     }
 
-    public static final String NBT_KEY = "perfectspawnJoined";
-
     @SubscribeEvent
-    public void playerLogin(PlayerLoggedInEvent event) {
-        SettingEntry se = PerfectSpawn.settings.getValidSettingEntry();
+    public void playerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        PerfectSpawnSettings.SettingEntry se = PerfectSpawn.settings.getValidSettingEntry();
 
         PerfectSpawnSettingsMessage message = null;
 
         if (se == null) {
+
             message = new PerfectSpawnSettingsMessage();
         } else {
+
             message = new PerfectSpawnSettingsMessage(se);
         }
 
-        MessageHandler.INSTANCE.sendTo(message, (EntityPlayerMP) event.player);
+        MessageHandler.INSTANCE.sendTo((IMessage) message, (EntityPlayerMP) event.player);
 
         if (!event.player.worldObj.isRemote) {
-            NBTTagCompound data = event.player.getEntityData();
-            NBTTagCompound persistent;
 
-            if (!data.hasKey(EntityPlayer.PERSISTED_NBT_TAG)) {
-                data.setTag(EntityPlayer.PERSISTED_NBT_TAG, (persistent = new NBTTagCompound()));
+            NBTTagCompound persistent, data = event.player.getEntityData();
+
+            if (!data.hasKey("PlayerPersisted")) {
+
+                data.setTag("PlayerPersisted", (NBTBase) (persistent = new NBTTagCompound()));
             } else {
-                persistent = data.getCompoundTag(EntityPlayer.PERSISTED_NBT_TAG);
+
+                persistent = data.getCompoundTag("PlayerPersisted");
             }
 
-            if (!persistent.hasKey(NBT_KEY)) {
-                persistent.setBoolean(NBT_KEY, true);
+            if (!persistent.hasKey("perfectspawnJoined")) {
+
+                persistent.setBoolean("perfectspawnJoined", true);
                 if (se != null) {
+
                     if (se.spawnDimension != event.player.dimension) {
                         MinecraftServer.getServer()
                             .getConfigurationManager()
@@ -97,9 +108,9 @@ public class PSEventHandler {
                                         .worldServerForDimension(se.spawnDimension)));
                     }
                     ((EntityPlayerMP) event.player).playerNetServerHandler.setPlayerLocation(
-                        se.spawnX + 0.5,
+                        se.spawnX + 0.5D,
                         se.spawnY,
-                        se.spawnZ + 0.5,
+                        se.spawnZ + 0.5D,
                         event.player.cameraYaw,
                         event.player.cameraPitch);
                     event.player.getEntityData()
@@ -111,30 +122,35 @@ public class PSEventHandler {
 
     @SubscribeEvent
     public void sleepInBed(PlayerSleepInBedEvent event) {
-        SettingEntry se = null;
+        PerfectSpawnSettings.SettingEntry se = null;
         if (event.entityPlayer.worldObj.isRemote) {
+
             se = PerfectSpawnClientHandler.currentServerSettings;
         } else {
+
             se = PerfectSpawn.settings.getValidSettingEntry();
         }
 
         if (se != null && se.forceBed) {
+
             WorldProvider provider = event.entityPlayer.worldObj.provider;
             EntityPlayer player = event.entityPlayer;
             World worldObj = player.worldObj;
 
             if (provider.dimensionId == se.spawnDimension) {
+
                 event.result = EntityPlayer.EnumStatus.OK;
                 if (player.isPlayerSleeping() || !player.isEntityAlive()) {
                     event.result = EntityPlayer.EnumStatus.OTHER_PROBLEM;
                 }
 
-                if (!player.worldObj.isDaytime() && provider.isSurfaceWorld()) {
+                if (player.worldObj.isDaytime() && provider.isSurfaceWorld()) {
                     event.result = EntityPlayer.EnumStatus.NOT_POSSIBLE_NOW;
                 }
 
-                if (Math.abs(player.posX - (double) event.x) > 3.0D || Math.abs(player.posY - (double) event.y) > 2.0D
-                    || Math.abs(player.posZ - (double) event.z) > 3.0D) {
+                if (!worldObj.isRemote
+                    && (Math.abs(player.posX - event.x) > 3.0D || Math.abs(player.posY - event.y) > 2.0D
+                        || Math.abs(player.posZ - event.z) > 3.0D)) {
                     event.result = EntityPlayer.EnumStatus.TOO_FAR_AWAY;
                 }
 
@@ -143,70 +159,71 @@ public class PSEventHandler {
                 List list = player.worldObj.getEntitiesWithinAABB(
                     EntityMob.class,
                     AxisAlignedBB.getBoundingBox(
-                        (double) event.x - d0,
-                        (double) event.y - d1,
-                        (double) event.z - d0,
-                        (double) event.x + d0,
-                        (double) event.y + d1,
-                        (double) event.z + d0));
+                        event.x - d0,
+                        event.y - d1,
+                        event.z - d0,
+                        event.x + d0,
+                        event.y + d1,
+                        event.z + d0));
 
                 if (!list.isEmpty()) {
                     event.result = EntityPlayer.EnumStatus.NOT_SAFE;
                 }
             }
 
-            if (player.isRiding()) {
-                player.mountEntity((Entity) null);
-            }
+            if ((!worldObj.isRemote && event.result == EntityPlayer.EnumStatus.OK) || worldObj.isRemote) {
 
-            this.setSize(player, 0.2F, 0.2F);
-            player.yOffset = 0.2F;
-
-            if (player.worldObj.blockExists(event.x, event.y, event.z)) {
-                int l = worldObj.getBlock(event.x, event.y, event.z)
-                    .getBedDirection(worldObj, event.x, event.y, event.z);
-                float f1 = 0.5F;
-                float f = 0.5F;
-
-                switch (l) {
-                    case 0:
-                        f = 0.9F;
-                        break;
-                    case 1:
-                        f1 = 0.1F;
-                        break;
-                    case 2:
-                        f = 0.1F;
-                        break;
-                    case 3:
-                        f1 = 0.9F;
+                if (player.isRiding()) {
+                    player.mountEntity((Entity) null);
                 }
 
-                this.func_71013_b(player, l);
-                player.setPosition(
-                    (double) ((float) event.x + f1),
-                    (double) ((float) event.y + 0.9375F),
-                    (double) ((float) event.z + f));
-            } else {
-                player.setPosition(
-                    (double) ((float) event.x + 0.5F),
-                    (double) ((float) event.y + 0.9375F),
-                    (double) ((float) event.z + 0.5F));
-            }
+                setSize((Entity) player, 0.2F, 0.2F);
+                player.yOffset = 0.2F;
 
-            try {
-                sleepTimer.set(player, 0);
-                sleeping.set(player, true);
-            } catch (Exception e) {
-                PerfectSpawn.instance.logger.log(Level.ERROR, "Couldn't reflect on player bed data");
-                e.printStackTrace();
-            }
+                if (player.worldObj.blockExists(event.x, event.y, event.z)) {
 
-            player.playerLocation = new ChunkCoordinates(event.x, event.y, event.z);
-            player.motionX = player.motionZ = player.motionY = 0.0D;
+                    int l = worldObj.getBlock(event.x, event.y, event.z)
+                        .getBedDirection((IBlockAccess) worldObj, event.x, event.y, event.z);
+                    float f1 = 0.5F;
+                    float f = 0.5F;
 
-            if (!player.worldObj.isRemote) {
-                player.worldObj.updateAllPlayersSleepingFlag();
+                    switch (l) {
+
+                        case 0:
+                            f = 0.9F;
+                            break;
+                        case 1:
+                            f1 = 0.1F;
+                            break;
+                        case 2:
+                            f = 0.1F;
+                            break;
+                        case 3:
+                            f1 = 0.9F;
+                            break;
+                    }
+                    func_71013_b(player, l);
+                    player.setPosition((event.x + f1), (event.y + 0.9375F), (event.z + f));
+                } else {
+
+                    player.setPosition((event.x + 0.5F), (event.y + 0.9375F), (event.z + 0.5F));
+                }
+
+                try {
+                    this.sleepTimer.set(player, Integer.valueOf(0));
+                    this.sleeping.set(player, Boolean.valueOf(true));
+                } catch (Exception e) {
+
+                    PerfectSpawn.instance.logger.log(Level.ERROR, "Couldn't reflect on player bed data");
+                    e.printStackTrace();
+                }
+
+                player.playerLocation = new ChunkCoordinates(event.x, event.y, event.z);
+                player.motionX = player.motionZ = player.motionY = 0.0D;
+
+                if (!player.worldObj.isRemote) {
+                    player.worldObj.updateAllPlayersSleepingFlag();
+                }
             }
         }
     }
@@ -216,6 +233,7 @@ public class PSEventHandler {
         player.field_71089_bV = 0.0F;
 
         switch (par1) {
+
             case 0:
                 player.field_71089_bV = -1.8F;
                 break;
@@ -227,12 +245,14 @@ public class PSEventHandler {
                 break;
             case 3:
                 player.field_71079_bU = -1.8F;
+                break;
         }
     }
 
     public static void setSpawnPoint(int dimension, int spawnX, int spawnY, int spawnZ) {
-        World dimensionWorld = DimensionManager.getWorld(dimension);
-        if (dimensionWorld instanceof WorldServerMulti) {
+        WorldServer worldServer = DimensionManager.getWorld(dimension);
+        if (worldServer instanceof WorldServerMulti) {
+
             WorldServerMulti w = (WorldServerMulti) DimensionManager.getWorld(dimension);
             DerivedWorldInfo worldInfo = (DerivedWorldInfo) w.getWorldInfo();
 
@@ -242,45 +262,59 @@ public class PSEventHandler {
                 WorldInfo info = (WorldInfo) f.get(worldInfo);
                 info.setSpawnPosition(spawnX, spawnY, spawnZ);
             } catch (Exception e) {
+
                 PerfectSpawn.instance.logger.log(Level.ERROR, "Couldn't set spawn position");
                 e.printStackTrace();
             }
+
         } else {
-            WorldInfo info = dimensionWorld.getWorldInfo();
+
+            WorldInfo info = worldServer.getWorldInfo();
             info.setSpawnPosition(spawnX, spawnY, spawnZ);
         }
     }
 
     private void setSize(Entity entity, float par1, float par2) {
-        float f2;
-
         if (par1 != entity.width || par2 != entity.height) {
-            f2 = entity.width;
+
+            float f = entity.width;
             entity.width = par1;
             entity.height = par2;
-            entity.boundingBox.maxX = entity.boundingBox.minX + (double) entity.width;
-            entity.boundingBox.maxZ = entity.boundingBox.minZ + (double) entity.width;
-            entity.boundingBox.maxY = entity.boundingBox.minY + (double) entity.height;
+            entity.boundingBox.maxX = entity.boundingBox.minX + entity.width;
+            entity.boundingBox.maxZ = entity.boundingBox.minZ + entity.width;
+            entity.boundingBox.maxY = entity.boundingBox.minY + entity.height;
 
-            if (entity.width > f2 && !entity.worldObj.isRemote) {
-                entity.moveEntity((double) (f2 - entity.width), 0.0D, (double) (f2 - entity.width));
+            if (entity.width > f && !entity.worldObj.isRemote) {
+                entity.moveEntity((f - entity.width), 0.0D, (f - entity.width));
             }
         }
 
-        f2 = par1 % 2.0F;
+        float f2 = par1 % 2.0F;
 
-        if ((double) f2 < 0.375D) {
+        if (f2 < 0.375D) {
+
             entity.myEntitySize = Entity.EnumEntitySize.SIZE_1;
-        } else if ((double) f2 < 0.75D) {
+        } else if (f2 < 0.75D) {
+
             entity.myEntitySize = Entity.EnumEntitySize.SIZE_2;
-        } else if ((double) f2 < 1.0D) {
+        } else if (f2 < 1.0D) {
+
             entity.myEntitySize = Entity.EnumEntitySize.SIZE_3;
-        } else if ((double) f2 < 1.375D) {
+        } else if (f2 < 1.375D) {
+
             entity.myEntitySize = Entity.EnumEntitySize.SIZE_4;
-        } else if ((double) f2 < 1.75D) {
+        } else if (f2 < 1.75D) {
+
             entity.myEntitySize = Entity.EnumEntitySize.SIZE_5;
         } else {
+
             entity.myEntitySize = Entity.EnumEntitySize.SIZE_6;
         }
     }
 }
+
+/*
+ * Location: /home/midnight/Downloads/PerfectSpawn-1.1-deobf.jar!/lumien/perfectspawn/Core/PSEventHandler.class
+ * Java compiler version: 6 (50.0)
+ * JD-Core Version: 1.1.3
+ */

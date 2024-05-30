@@ -1,9 +1,9 @@
-package lumien.perfectspawn;
 
-import static lumien.perfectspawn.PerfectSpawn.*;
+package lumien.perfectspawn;
 
 import java.util.Map;
 
+import net.minecraft.command.ICommand;
 import net.minecraftforge.common.MinecraftForge;
 
 import org.apache.logging.log4j.Logger;
@@ -24,24 +24,21 @@ import lumien.perfectspawn.Core.PerfectSpawnCommand;
 import lumien.perfectspawn.Core.PerfectSpawnSettings;
 import lumien.perfectspawn.Network.MessageHandler;
 
-@Mod(modid = MOD_ID, name = MOD_NAME, version = MOD_VERSION)
+@Mod(modid = PerfectSpawn.MOD_ID, name = PerfectSpawn.MOD_NAME, version = PerfectSpawn.MOD_VERSION)
 public class PerfectSpawn {
 
     public static final String MOD_ID = "PerfectSpawn";
     public static final String MOD_NAME = "PerfectSpawn";
-    public static final String MOD_VERSION = "@VERSION@";
-
+    public static final String MOD_VERSION = "1.1.1";
     public Logger logger;
     public boolean enabled;
-
-    @Instance(MOD_ID)
+    @Instance(PerfectSpawn.MOD_ID)
     public static PerfectSpawn instance;
-
     public static PerfectSpawnSettings settings;
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
-        logger = event.getModLog();
+        this.logger = event.getModLog();
     }
 
     @NetworkCheckHandler
@@ -64,13 +61,11 @@ public class PerfectSpawn {
     }
 
     @EventHandler
-    public void postInit(FMLPostInitializationEvent event) {
-
-    }
+    public void postInit(FMLPostInitializationEvent event) {}
 
     @EventHandler
     public void serverStarting(FMLServerStartingEvent event) {
-        event.registerServerCommand(new PerfectSpawnCommand());
+        event.registerServerCommand((ICommand) new PerfectSpawnCommand());
     }
 
     @EventHandler
@@ -78,3 +73,9 @@ public class PerfectSpawn {
         settings.serverStarted();
     }
 }
+
+/*
+ * Location: /home/midnight/Downloads/PerfectSpawn-1.1-deobf.jar!/lumien/perfectspawn/PerfectSpawn.class
+ * Java compiler version: 6 (50.0)
+ * JD-Core Version: 1.1.3
+ */

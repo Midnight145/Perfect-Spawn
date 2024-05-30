@@ -1,3 +1,4 @@
+
 package lumien.perfectspawn.Network;
 
 import cpw.mods.fml.common.network.NetworkRegistry;
@@ -14,3 +15,9 @@ public class MessageHandler {
         INSTANCE.registerMessage(PerfectSpawnSettingsMessage.class, PerfectSpawnSettingsMessage.class, 0, Side.CLIENT);
     }
 }
+
+/*
+ * Location: /home/midnight/Downloads/PerfectSpawn-1.1-deobf.jar!/lumien/perfectspawn/Network/MessageHandler.class
+ * Java compiler version: 6 (50.0)
+ * JD-Core Version: 1.1.3
+ */

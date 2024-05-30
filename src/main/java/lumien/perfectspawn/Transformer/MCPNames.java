@@ -1,3 +1,4 @@
+
 package lumien.perfectspawn.Transformer;
 
 import java.io.File;
@@ -20,13 +21,13 @@ public class MCPNames {
 
     static {
         if (mcp()) {
-            String mappingDir;
 
-            mappingDir = "./../build/unpacked/conf/";
+            String mappingDir = "./../build/unpacked/conf/";
 
             fields = readMappings(new File(mappingDir + "fields.csv"));
             methods = readMappings(new File(mappingDir + "methods.csv"));
         } else {
+
             fields = methods = null;
         }
     }
@@ -38,26 +39,28 @@ public class MCPNames {
     public static String field(String srgName) {
         if (mcp()) {
             return fields.get(srgName);
-        } else {
-            return srgName;
         }
+
+        return srgName;
     }
 
     public static String method(String srgName) {
         if (mcp()) {
             return methods.get(srgName);
-        } else {
-            return srgName;
         }
+
+        return srgName;
     }
 
     private static Map<String, String> readMappings(File file) {
         if (!file.isFile()) {
             throw new RuntimeException("Couldn't find MCP mappings.");
         }
+
         try {
-            return Files.readLines(file, Charsets.UTF_8, new MCPFileParser());
+            return (Map<String, String>) Files.readLines(file, Charsets.UTF_8, new MCPFileParser());
         } catch (IOException e) {
+
             throw new RuntimeException("Couldn't read SRG->MCP mappings", e);
         }
     }
@@ -67,33 +70,43 @@ public class MCPNames {
         private static final Splitter splitter = Splitter.on(',')
             .trimResults();
         private final Map<String, String> map = Maps.newHashMap();
+
         private boolean foundFirst;
 
-        @Override
         public boolean processLine(String line) throws IOException {
-            if (!foundFirst) {
-                foundFirst = true;
+            if (!this.foundFirst) {
+
+                this.foundFirst = true;
                 return true;
             }
 
             Iterator<String> splitted = splitter.split(line)
                 .iterator();
+
             try {
                 String srg = splitted.next();
                 String mcp = splitted.next();
-                if (!map.containsKey(srg)) {
-                    map.put(srg, mcp);
+                if (!this.map.containsKey(srg)) {
+                    this.map.put(srg, mcp);
                 }
             } catch (NoSuchElementException e) {
+
                 throw new IOException("Invalid Mappings file!", e);
             }
 
             return true;
         }
 
-        @Override
         public Map<String, String> getResult() {
-            return ImmutableMap.copyOf(map);
+            return (Map<String, String>) ImmutableMap.copyOf(this.map);
         }
+
+        private MCPFileParser() {}
     }
 }
+
+/*
+ * Location: /home/midnight/Downloads/PerfectSpawn-1.1-deobf.jar!/lumien/perfectspawn/Transformer/MCPNames.class
+ * Java compiler version: 6 (50.0)
+ * JD-Core Version: 1.1.3
+ */

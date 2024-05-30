@@ -1,3 +1,4 @@
+
 package lumien.perfectspawn.Network;
 
 import org.apache.logging.log4j.Level;
@@ -7,24 +8,19 @@ import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 import lumien.perfectspawn.Core.PerfectSpawnClientHandler;
-import lumien.perfectspawn.Core.PerfectSpawnSettings.SettingEntry;
+import lumien.perfectspawn.Core.PerfectSpawnSettings;
 import lumien.perfectspawn.PerfectSpawn;
 
 public class PerfectSpawnSettingsMessage implements IMessage, IMessageHandler<PerfectSpawnSettingsMessage, IMessage> {
 
-    SettingEntry se;
+    PerfectSpawnSettings.SettingEntry se;
     boolean empty = true;
 
-    public PerfectSpawnSettingsMessage() {
-
-    }
-
-    public PerfectSpawnSettingsMessage(SettingEntry toSend) {
+    public PerfectSpawnSettingsMessage(PerfectSpawnSettings.SettingEntry toSend) {
         this.se = toSend;
         this.empty = false;
     }
 
-    @Override
     public IMessage onMessage(PerfectSpawnSettingsMessage message, MessageContext ctx) {
         PerfectSpawnClientHandler.currentServerSettings = message.se;
 
@@ -34,31 +30,40 @@ public class PerfectSpawnSettingsMessage implements IMessage, IMessageHandler<Pe
         return null;
     }
 
-    @Override
     public void fromBytes(ByteBuf buf) {
-        se = null;
-        empty = buf.readBoolean();
+        this.se = null;
+        this.empty = buf.readBoolean();
 
-        if (!empty) {
-            se = new SettingEntry(buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt());
-            se.setForceBed(buf.readBoolean());
-            se.setExactSpawn(buf.readBoolean());
+        if (!this.empty) {
+
+            this.se = new PerfectSpawnSettings.SettingEntry(buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt());
+            this.se.setForceBed(buf.readBoolean());
+            this.se.setExactSpawn(buf.readBoolean());
         }
     }
 
-    @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeBoolean(empty);
+        buf.writeBoolean(this.empty);
 
-        if (!empty) {
-            buf.writeInt(se.getSpawnDimension());
+        if (!this.empty) {
 
-            buf.writeInt(se.getSpawnX());
-            buf.writeInt(se.getSpawnY());
-            buf.writeInt(se.getSpawnZ());
+            buf.writeInt(this.se.getSpawnDimension());
 
-            buf.writeBoolean(se.forceBed());
-            buf.writeBoolean(se.isExactSpawn());
+            buf.writeInt(this.se.getSpawnX());
+            buf.writeInt(this.se.getSpawnY());
+            buf.writeInt(this.se.getSpawnZ());
+
+            buf.writeBoolean(this.se.forceBed());
+            buf.writeBoolean(this.se.isExactSpawn());
         }
     }
+
+    public PerfectSpawnSettingsMessage() {}
 }
+
+/*
+ * Location:
+ * /home/midnight/Downloads/PerfectSpawn-1.1-deobf.jar!/lumien/perfectspawn/Network/PerfectSpawnSettingsMessage.class
+ * Java compiler version: 6 (50.0)
+ * JD-Core Version: 1.1.3
+ */
