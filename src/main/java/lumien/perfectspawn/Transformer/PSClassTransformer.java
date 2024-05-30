@@ -30,6 +30,9 @@ public class PSClassTransformer implements IClassTransformer {
     Logger logger = LogManager.getLogger("PerfectSpawnCore");
 
     public byte[] transform(String name, String transformedName, byte[] data) {
+        if (data == null) {
+            return null;
+        }
         this.logger.log(Level.DEBUG, "Transforming " + name);
         ClassNode classNode = new ClassNode();
         ClassReader classReader = new ClassReader(data);
