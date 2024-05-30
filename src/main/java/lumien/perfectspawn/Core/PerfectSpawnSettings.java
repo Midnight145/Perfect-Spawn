@@ -7,8 +7,6 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.integrated.IntegratedServer;
-import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
 
 import org.apache.logging.log4j.Level;
@@ -17,229 +15,215 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import cpw.mods.fml.common.FMLCommonHandler;
-
-import lumien.perfectspawn.PerfectSpawn;
 import lumien.perfectspawn.Network.MessageHandler;
 import lumien.perfectspawn.Network.PerfectSpawnSettingsMessage;
+import lumien.perfectspawn.PerfectSpawn;
 
-public class PerfectSpawnSettings
-{
-	static public class SettingEntry
-	{
-		int spawnDimension;
+public class PerfectSpawnSettings {
 
-		int spawnX;
-		int spawnY;
-		int spawnZ;
+    static public class SettingEntry {
 
-		boolean forceBed;
-		boolean exactSpawn;
-		boolean spawnProtection;
+        int spawnDimension;
 
-		public SettingEntry(int spawnDimension, int spawnX, int spawnY, int spawnZ)
-		{
-			this.spawnDimension = spawnDimension;
+        int spawnX;
+        int spawnY;
+        int spawnZ;
 
-			this.spawnX = spawnX;
-			this.spawnY = spawnY;
-			this.spawnZ = spawnZ;
+        boolean forceBed;
+        boolean exactSpawn;
+        boolean spawnProtection;
 
-			this.forceBed = true;
-			this.exactSpawn = true;
-			this.spawnProtection = true;
-		}
+        public SettingEntry(int spawnDimension, int spawnX, int spawnY, int spawnZ) {
+            this.spawnDimension = spawnDimension;
 
-		public boolean isExactSpawn()
-		{
-			return exactSpawn;
-		}
+            this.spawnX = spawnX;
+            this.spawnY = spawnY;
+            this.spawnZ = spawnZ;
 
-		public boolean forceBed()
-		{
-			return forceBed;
-		}
+            this.forceBed = true;
+            this.exactSpawn = true;
+            this.spawnProtection = true;
+        }
 
-		public void setExactSpawn(boolean exactSpawn)
-		{
-			this.exactSpawn = exactSpawn;
-		}
+        public boolean isExactSpawn() {
+            return exactSpawn;
+        }
 
-		public void setForceBed(boolean forceBed)
-		{
-			this.forceBed = forceBed;
-		}
+        public boolean forceBed() {
+            return forceBed;
+        }
 
-		public int getSpawnDimension()
-		{
-			return spawnDimension;
-		}
+        public void setExactSpawn(boolean exactSpawn) {
+            this.exactSpawn = exactSpawn;
+        }
 
-		public int getSpawnX()
-		{
-			return spawnX;
-		}
+        public void setForceBed(boolean forceBed) {
+            this.forceBed = forceBed;
+        }
 
-		public int getSpawnY()
-		{
-			return spawnY;
-		}
+        public int getSpawnDimension() {
+            return spawnDimension;
+        }
 
-		public int getSpawnZ()
-		{
-			return spawnZ;
-		}
+        public int getSpawnX() {
+            return spawnX;
+        }
 
-		public String toString()
-		{
-			return "SettingEntry(spawnX=" + spawnX + ",spawnY=" + spawnY + ",spawnZ=" + spawnZ + ",spawnDimension=" + spawnDimension;
-		}
+        public int getSpawnY() {
+            return spawnY;
+        }
 
-		public void setSpawnProtection(boolean spawnProtection)
-		{
-			this.spawnProtection = spawnProtection;
-		}
-	}
+        public int getSpawnZ() {
+            return spawnZ;
+        }
 
-	private SettingEntry globalSetting;
-	private HashMap<String, SettingEntry> worldSettings;
+        public String toString() {
+            return "SettingEntry(spawnX=" + spawnX
+                + ",spawnY="
+                + spawnY
+                + ",spawnZ="
+                + spawnZ
+                + ",spawnDimension="
+                + spawnDimension;
+        }
 
-	File worldDictionary;
+        public void setSpawnProtection(boolean spawnProtection) {
+            this.spawnProtection = spawnProtection;
+        }
+    }
 
-	public PerfectSpawnSettings()
-	{
-		globalSetting = null;
-		worldSettings = new HashMap<String, SettingEntry>();
-	}
+    private SettingEntry globalSetting;
+    private HashMap<String, SettingEntry> worldSettings;
 
-	public void init()
-	{
-		globalSetting = loadConfigFile(new File("PerfectSpawn.json"));
-	}
+    File worldDictionary;
 
-	public void reload()
-	{
-		init();
-		serverStarted();
+    public PerfectSpawnSettings() {
+        globalSetting = null;
+        worldSettings = new HashMap<String, SettingEntry>();
+    }
 
-		SettingEntry se = getValidSettingEntry();
-		if (se != null && MinecraftServer.getServer().worldServerForDimension(se.spawnDimension) != null)
-		{
-			PSEventHandler.setSpawnPoint(se.spawnDimension, se.spawnX, se.spawnY, se.spawnZ);
-		}
+    public void init() {
+        globalSetting = loadConfigFile(new File("PerfectSpawn.json"));
+    }
 
-		sendPackets();
-	}
+    public void reload() {
+        init();
+        serverStarted();
 
-	private void sendPackets()
-	{
-		SettingEntry se = PerfectSpawn.settings.getValidSettingEntry();
+        SettingEntry se = getValidSettingEntry();
+        if (se != null && MinecraftServer.getServer()
+            .worldServerForDimension(se.spawnDimension) != null) {
+            PSEventHandler.setSpawnPoint(se.spawnDimension, se.spawnX, se.spawnY, se.spawnZ);
+        }
 
-		PerfectSpawnSettingsMessage message = null;
+        sendPackets();
+    }
 
-		if (se == null)
-		{
-			message = new PerfectSpawnSettingsMessage();
-		}
-		else
-		{
-			message = new PerfectSpawnSettingsMessage(se);
-		}
+    private void sendPackets() {
+        SettingEntry se = PerfectSpawn.settings.getValidSettingEntry();
 
-		MessageHandler.INSTANCE.sendToAll(message);
-	}
+        PerfectSpawnSettingsMessage message = null;
 
-	public SettingEntry getValidSettingEntry()
-	{
-		if (MinecraftServer.getServer().getServerOwner() != null)
-		{
-			String world = MinecraftServer.getServer().getFolderName();
-			if (world != null && worldSettings.containsKey(world))
-			{
-				return worldSettings.get(world);
-			}
-		}
-		if (globalSetting != null)
-		{
-			return globalSetting;
-		}
+        if (se == null) {
+            message = new PerfectSpawnSettingsMessage();
+        } else {
+            message = new PerfectSpawnSettingsMessage(se);
+        }
 
-		return null;
-	}
+        MessageHandler.INSTANCE.sendToAll(message);
+    }
 
-	public void serverStarted()
-	{
-		File worldDictionary = DimensionManager.getCurrentSaveRootDirectory();
-		if (worldDictionary != null)
-		{
-			SettingEntry se = loadConfigFile(new File(worldDictionary, "PerfectSpawn.json"));
-			if (se != null)
-			{
-				worldSettings.put(MinecraftServer.getServer().getFolderName(), se);
-			}
-		}
-	}
+    public SettingEntry getValidSettingEntry() {
+        if (MinecraftServer.getServer()
+            .getServerOwner() != null) {
+            String world = MinecraftServer.getServer()
+                .getFolderName();
+            if (world != null && worldSettings.containsKey(world)) {
+                return worldSettings.get(world);
+            }
+        }
+        if (globalSetting != null) {
+            return globalSetting;
+        }
 
-	private SettingEntry loadConfigFile(File f)
-	{
-		if (!f.exists() || f.isDirectory())
-		{
-			return null;
-		}
-		else
-		{
-			JsonParser jsonParser = new JsonParser();
-			FileReader fileReader = null;
-			try
-			{
-				fileReader = new FileReader(f);
-			}
-			catch (FileNotFoundException fileNotFound)
-			{
-				PerfectSpawn.instance.logger.log(Level.WARN, "Couldn't read " + f.getAbsolutePath());
-			}
-			if (fileReader != null)
-			{
-				JsonElement jsonElement = jsonParser.parse(fileReader);
-				try
-				{
-					fileReader.close();
-				}
-				catch (IOException e)
-				{
-					e.printStackTrace();
-				}
-				JsonObject jsonObject = (JsonObject) jsonElement;
+        return null;
+    }
 
-				if (jsonObject.has("spawnDimension") && jsonObject.has("spawnX") && jsonObject.has("spawnY") && jsonObject.has("spawnZ"))
-				{
-					PerfectSpawn.instance.logger.log(Level.INFO, "Loading " + f.getAbsolutePath());
+    public void serverStarted() {
+        File worldDictionary = DimensionManager.getCurrentSaveRootDirectory();
+        if (worldDictionary != null) {
+            SettingEntry se = loadConfigFile(new File(worldDictionary, "PerfectSpawn.json"));
+            if (se != null) {
+                worldSettings.put(
+                    MinecraftServer.getServer()
+                        .getFolderName(),
+                    se);
+            }
+        }
+    }
 
-					SettingEntry settingsEntry = new SettingEntry(jsonObject.get("spawnDimension").getAsInt(), jsonObject.get("spawnX").getAsInt(), jsonObject.get("spawnY").getAsInt(), jsonObject.get("spawnZ").getAsInt());
+    private SettingEntry loadConfigFile(File f) {
+        if (!f.exists() || f.isDirectory()) {
+            return null;
+        } else {
+            JsonParser jsonParser = new JsonParser();
+            FileReader fileReader = null;
+            try {
+                fileReader = new FileReader(f);
+            } catch (FileNotFoundException fileNotFound) {
+                PerfectSpawn.instance.logger.log(Level.WARN, "Couldn't read " + f.getAbsolutePath());
+            }
+            if (fileReader != null) {
+                JsonElement jsonElement = jsonParser.parse(fileReader);
+                try {
+                    fileReader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                JsonObject jsonObject = (JsonObject) jsonElement;
 
-					if (jsonObject.has("forceBed"))
-					{
-						settingsEntry.setForceBed(jsonObject.get("forceBed").getAsBoolean());
-					}
+                if (jsonObject.has("spawnDimension") && jsonObject.has("spawnX")
+                    && jsonObject.has("spawnY")
+                    && jsonObject.has("spawnZ")) {
+                    PerfectSpawn.instance.logger.log(Level.INFO, "Loading " + f.getAbsolutePath());
 
-					if (jsonObject.has("exactSpawn"))
-					{
-						settingsEntry.setExactSpawn(jsonObject.get("exactSpawn").getAsBoolean());
-					}
-					
-					if (jsonObject.has("spawnProtection"))
-					{
-						settingsEntry.setSpawnProtection(jsonObject.get("spawnProtection").getAsBoolean());
-					}
+                    SettingEntry settingsEntry = new SettingEntry(
+                        jsonObject.get("spawnDimension")
+                            .getAsInt(),
+                        jsonObject.get("spawnX")
+                            .getAsInt(),
+                        jsonObject.get("spawnY")
+                            .getAsInt(),
+                        jsonObject.get("spawnZ")
+                            .getAsInt());
 
-					return settingsEntry;
-				}
-				else
-				{
-					PerfectSpawn.instance.logger.log(Level.WARN, "Invalid PerfectSpawn config file: (" + f.getAbsolutePath() + ") It needs spawnDimension,spawnX,spawnY,spawnZ.");
-				}
-			}
-		}
-		return null;
-	}
+                    if (jsonObject.has("forceBed")) {
+                        settingsEntry.setForceBed(
+                            jsonObject.get("forceBed")
+                                .getAsBoolean());
+                    }
+
+                    if (jsonObject.has("exactSpawn")) {
+                        settingsEntry.setExactSpawn(
+                            jsonObject.get("exactSpawn")
+                                .getAsBoolean());
+                    }
+
+                    if (jsonObject.has("spawnProtection")) {
+                        settingsEntry.setSpawnProtection(
+                            jsonObject.get("spawnProtection")
+                                .getAsBoolean());
+                    }
+
+                    return settingsEntry;
+                } else {
+                    PerfectSpawn.instance.logger.log(
+                        Level.WARN,
+                        "Invalid PerfectSpawn config file: (" + f.getAbsolutePath()
+                            + ") It needs spawnDimension,spawnX,spawnY,spawnZ.");
+                }
+            }
+        }
+        return null;
+    }
 }

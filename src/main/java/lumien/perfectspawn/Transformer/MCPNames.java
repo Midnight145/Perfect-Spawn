@@ -13,110 +13,87 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 
-public class MCPNames
-{
-	private static Map<String, String> fields;
-	private static Map<String, String> methods;
+public class MCPNames {
 
-	static
-	{
-		if (mcp())
-		{
-			String mappingDir;
+    private static Map<String, String> fields;
+    private static Map<String, String> methods;
 
-			mappingDir = "./../build/unpacked/conf/";
+    static {
+        if (mcp()) {
+            String mappingDir;
 
-			fields = readMappings(new File(mappingDir + "fields.csv"));
-			methods = readMappings(new File(mappingDir + "methods.csv"));
-		}
-		else
-		{
-			fields = methods = null;
-		}
-	}
+            mappingDir = "./../build/unpacked/conf/";
 
-	public static boolean mcp()
-	{
-		return PSLoadingPlugin.IN_MCP;
-	}
+            fields = readMappings(new File(mappingDir + "fields.csv"));
+            methods = readMappings(new File(mappingDir + "methods.csv"));
+        } else {
+            fields = methods = null;
+        }
+    }
 
-	public static String field(String srgName)
-	{
-		if (mcp())
-		{
-			return fields.get(srgName);
-		}
-		else
-		{
-			return srgName;
-		}
-	}
+    public static boolean mcp() {
+        return PSLoadingPlugin.IN_MCP;
+    }
 
-	public static String method(String srgName)
-	{
-		if (mcp())
-		{
-			return methods.get(srgName);
-		}
-		else
-		{
-			return srgName;
-		}
-	}
+    public static String field(String srgName) {
+        if (mcp()) {
+            return fields.get(srgName);
+        } else {
+            return srgName;
+        }
+    }
 
-	private static Map<String, String> readMappings(File file)
-	{
-		if (!file.isFile())
-		{
-			throw new RuntimeException("Couldn't find MCP mappings.");
-		}
-		try
-		{
-			return Files.readLines(file, Charsets.UTF_8, new MCPFileParser());
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException("Couldn't read SRG->MCP mappings", e);
-		}
-	}
+    public static String method(String srgName) {
+        if (mcp()) {
+            return methods.get(srgName);
+        } else {
+            return srgName;
+        }
+    }
 
-	private static class MCPFileParser implements LineProcessor<Map<String, String>>
-	{
-		private static final Splitter splitter = Splitter.on(',').trimResults();
-		private final Map<String, String> map = Maps.newHashMap();
-		private boolean foundFirst;
+    private static Map<String, String> readMappings(File file) {
+        if (!file.isFile()) {
+            throw new RuntimeException("Couldn't find MCP mappings.");
+        }
+        try {
+            return Files.readLines(file, Charsets.UTF_8, new MCPFileParser());
+        } catch (IOException e) {
+            throw new RuntimeException("Couldn't read SRG->MCP mappings", e);
+        }
+    }
 
-		@Override
-		public boolean processLine(String line) throws IOException
-		{
-			if (!foundFirst)
-			{
-				foundFirst = true;
-				return true;
-			}
+    private static class MCPFileParser implements LineProcessor<Map<String, String>> {
 
-			Iterator<String> splitted = splitter.split(line).iterator();
-			try
-			{
-				String srg = splitted.next();
-				String mcp = splitted.next();
-				if (!map.containsKey(srg))
-				{
-					map.put(srg, mcp);
-				}
-			}
-			catch (NoSuchElementException e)
-			{
-				throw new IOException("Invalid Mappings file!", e);
-			}
+        private static final Splitter splitter = Splitter.on(',')
+            .trimResults();
+        private final Map<String, String> map = Maps.newHashMap();
+        private boolean foundFirst;
 
-			return true;
-		}
+        @Override
+        public boolean processLine(String line) throws IOException {
+            if (!foundFirst) {
+                foundFirst = true;
+                return true;
+            }
 
-		@Override
-		public Map<String, String> getResult()
-		{
-			return ImmutableMap.copyOf(map);
-		}
-	}
+            Iterator<String> splitted = splitter.split(line)
+                .iterator();
+            try {
+                String srg = splitted.next();
+                String mcp = splitted.next();
+                if (!map.containsKey(srg)) {
+                    map.put(srg, mcp);
+                }
+            } catch (NoSuchElementException e) {
+                throw new IOException("Invalid Mappings file!", e);
+            }
+
+            return true;
+        }
+
+        @Override
+        public Map<String, String> getResult() {
+            return ImmutableMap.copyOf(map);
+        }
+    }
 }
