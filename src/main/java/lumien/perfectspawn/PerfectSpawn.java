@@ -29,7 +29,7 @@ public class PerfectSpawn {
 
     public static final String MOD_ID = "PerfectSpawn";
     public static final String MOD_NAME = "PerfectSpawn";
-    public static final String MOD_VERSION = "1.1.1";
+    public static final String MOD_VERSION = "1.1.2";
     public Logger logger;
     public boolean enabled;
     @Instance(PerfectSpawn.MOD_ID)
